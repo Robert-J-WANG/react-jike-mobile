@@ -78,6 +78,8 @@
         ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
         ```
 
+
+
 ### 2. 安装antDesignMobile组件库
 
 1. [ant Design Mobile](https://mobile.ant.design/zh)是ant Design家族里专门针对移动端的组件库
@@ -128,4 +130,94 @@
     export default App;
     ```
 
-    
+
+
+### 3. 配置路径别名
+
+1. 使用场景：项目中各个模块之间的相互导入导出，可以通过@别名路径来做路径的简化。经过配置@相当于src目录。
+
+2. 比如：
+
+    - 配置之前的路径
+
+        ```tsx
+        import Detail from ' .. /pages/Detail '
+        ```
+
+    - 配置之后的路径
+
+        ```tsx
+        import Detail from '@/pages/Detail '
+        ```
+
+3. 步骤：
+
+    - 让Vite做路径解析（真实的路劲转换）
+
+        - vite.config.ts中添加配置对象
+
+            ```ts
+            import { defineConfig } from "vite";
+            import react from "@vitejs/plugin-react";
+             // 引入path对象
+            import path from "path";
+            
+            // https://vitejs.dev/config/
+            export default defineConfig({
+              plugins: [react()],
+            
+              // 配置路径别名
+              resolve: {
+                alias: {
+                  "@": path.resolve(__dirname, "src"),
+                },
+              },
+            });
+            ```
+
+        - 如果你是刚创建的TypeScript项目，有可能会遇到`找不到模块“path”或其相应的类型声明`的错误提示，安装`@types/node`即可
+
+            ```bash
+            yarn add @types/node -D
+            ```
+
+    - 让VSCode做智能路径提示（开发者体验）
+
+        -  tsconfig.json中添加配置项
+
+            ```json
+            {
+              "compilerOptions": {
+               ...
+                "skipLibCheck": true,
+            
+                // 别名路径的配置项
+                "baseUrl": ".",
+                "paths": {
+                  "@/*": ["src/*"]
+                },
+            
+                /* Bundler mode */
+                "moduleResolution": "bundler",
+                "allowImportingTsExtensions": true,
+               ...
+              }
+            ```
+
+    4. 测试配置是否成功
+
+        -  修改main.ts的路径
+
+            ```tsx
+            import ReactDOM from "react-dom/client";
+            import App from "@/App"; // 使用路径别名
+            import "@/index.css"; // 使用路径别名
+            
+            ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+            ```
+
+        - 键入@之后会有自定提示的引用文件
+
+            
+
+​		
