@@ -77,3 +77,55 @@
         
         ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
         ```
+
+### 2. 安装antDesignMobile组件库
+
+1. [ant Design Mobile](https://mobile.ant.design/zh)是ant Design家族里专门针对移动端的组件库
+
+2. 查看文档，安装并使用
+
+    - 安装
+
+        ```
+        yarn add antd-mobile
+        ```
+
+    - 直接引入组件即可，antd-mobile 会自动为你加载 css 样式文件
+
+        ```
+        import { Button } from 'antd-mobile'
+        ```
+
+    - 在 App中测试一下
+
+        ```tsx
+        import { Button } from "antd-mobile";
+        function App() {
+          return (
+            <>
+              <p>this is an app</p>
+              <Button>this is a button</Button>
+            </>
+          );
+        }
+        export default App;
+        ```
+
+3. 在文档中搜索Button 按钮，探索更多属性的使用
+
+    ```tsx
+    import { Button } from "antd-mobile";
+    function App() {
+      return (
+        <>
+          <p>this is an app</p>
+          <Button color="success" fill="outline">  {/* 鼠标放置到Button时，ts会自动提示属性和属性值 */}
+            this is a button
+          </Button>
+        </>
+      );
+    }
+    export default App;
+    ```
+
+    
