@@ -1,30 +1,79 @@
-# React + TypeScript + Vite
+## React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### 1. 项目环境创建
 
-Currently, two official plugins are available:
+1. 安装vite工具，并创建项目
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+    ```bash
+    yarn create vite
+    ```
 
-## Expanding the ESLint configuration
+2. 设置项目名称
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+    ```bash
+    ? Project name: › react-jike-mobile  // 项目名称
+    ```
 
-- Configure the top-level `parserOptions` property like this:
+3. 选择react框架
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
+    ```bash
+    ? Select a framework: › - Use arrow-keys. Return to submit.
+        Vanilla
+        Vue
+    ❯   React
+        Preact
+        Lit
+        Svelte
+        Solid
+        Qwik
+        Others
+    ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+4. 选择开发语言环境ts
+
+    ```
+    ? Select a variant: › - Use arrow-keys. Return to submit.
+    ❯   TypeScript
+        TypeScript + SWC
+        JavaScript
+        JavaScript + SWC
+    ```
+
+5. 进入项目文件夹，并运行安装包依赖
+
+    ```
+    cd react-jike-mobile
+    ```
+
+    ```
+    yarn 
+    ```
+
+6. 运行项目，测试是否安装成功
+
+    ```
+    yarn dev
+    ```
+
+7. 整理文件结构，生成空白页面
+
+    - 删除src下的部分文件，只保留App.tsx, index.css, main.tsx, cite-env.d.ts
+
+    - 清理App.tsx的内容
+
+        ```
+        function App() {
+          return <>this is an app</>;
+        }
+        export default App;
+        ```
+
+    - 清理main.tsx的内容（删除严格模式）
+
+        ```tsx
+        import ReactDOM from "react-dom/client";
+        import App from "./App.tsx";
+        import "./index.css";
+        
+        ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+        ```
