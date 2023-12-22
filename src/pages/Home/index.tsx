@@ -15,10 +15,13 @@ const Home = () => {
             <Tabs.Tab title={item.name} key={item.id}>
               {/* list组件 */}
 
-              <HomeList
-                //把channelID传递过去，数值item.id转换为字符串
-                channelID={"" + item.id}
-              />
+              {/* 添加HomeList的布局 */}
+              <div className="listContainer">
+                <HomeList
+                  //把channelID传递过去，数值item.id转换为字符串
+                  channelID={"" + item.id}
+                />
+              </div>
             </Tabs.Tab>
           ))}
         </Tabs>

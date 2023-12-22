@@ -567,6 +567,8 @@
           top: 50px;
           bottom: 0;
           width: 100%;
+            /* 页面滚动 */
+          overflow: auto;
         }
         ```
 
@@ -995,7 +997,7 @@
               }
             };
             getArticleList();
-          }, []);
+          }, [channelID]);
           return (
             <List header="文章列表">
               {articleList.results.map((item) => (
@@ -1057,6 +1059,357 @@
 
         
 
-3. 实现上拉加载功能
+### 9. Home模块—List组件无限滚动渲染
 
-4. 发生的发生的 
+1. 场景：list列表在滑动到底部时，自动加载下一页雷彪数据
+
+2. 思路：
+
+    1. 滑动到底部触发加载下一页动作 : <InfiniteScroll/>
+
+        - 查看antDesignMobile文档的<InfiniteScroll/>组件的使用方法
+
+            ![infiniteScroll](md-assets/infiniteScroll.png)
+            
+        - Home组件中, 给渲染HomeLis的区域添加布局限定 class=' listContainer '
+
+            ```tsx
+            import { useTabs } from "@/hooks/useTabs";
+            import "@/pages/Home/index.css";
+            import { Tabs } from "antd-mobile";
+            import { HomeList } from "./HomeList";
+            const Home = () => {
+              // 组件中调用自定义hook函数，消费其返回的数据和方法
+              const { channels } = useTabs();
+              return (
+                <>
+                  <div className="tabContainer">
+                    {/* tab标签布局区域 */}
+                    <Tabs defaultActiveKey="0">
+                      {/* 动态渲染数据到组件中 */}
+                      {channels.map((item) => (
+                        <Tabs.Tab title={item.name} key={item.id}>
+                          {/* list组件 */}
+            
+                          {/* 添加HomeList的布局 */}
+                          <div className="listContainer">
+                            <HomeList
+                              //把channelID传递过去，数值item.id转换为字符串
+                              channelID={"" + item.id}
+                            />
+                          </div>
+                          
+                        </Tabs.Tab>
+                      ))}
+                    </Tabs>
+                  </div>
+                </>
+              );
+            };
+            export default Home;
+            ```
+            
+        - HomeList组件中引入InfiniteScroll组件，并设置滚动的属性和逻辑
+
+            ```tsx
+            import { Image, InfiniteScroll, List } from "antd-mobile";
+            import { useEffect, useState } from "react";
+            import { ListRes, fetchListAPI } from "@/apis/list";
+            
+            // 定义params参数类型
+            type ParmasType = {
+              channelID: string;
+            };
+            export const HomeList = (params: ParmasType) => {
+              // 解构出params参数
+              const { channelID } = params;
+            
+              /* ------------------- 调用API接口，获取真实数据 ------------------- */
+              const [articleList, setArticleList] = useState<ListRes>({
+                results: [],
+                pre_timestamp: "" + new Date().getTime(),
+              });
+              useEffect(() => {
+                const getArticleList = async () => {
+                  try {
+                    const res = await fetchListAPI({
+                      channel_id: channelID, // 使用params参数
+                      timestamp: "" + new Date().getTime,
+                    });
+                    setArticleList({
+                      results: res.data.data.results,
+                      pre_timestamp: res.data.data.pre_timestamp,
+                    });
+                  } catch (error) {
+                    throw new Error("fetchListAPI error");
+                  }
+                };
+                getArticleList();
+              }, [channelID]);
+            
+              /* --------------------- 无限滚动页面加载的逻辑 -------------------- */
+              const [hasMore, setHasMore] = useState(true);
+            
+              // 注意：loadMore是异步函数，需要加async字段
+              const loadMore = async () => {
+                // 无限滚动的逻辑
+              };
+              return (
+                <>
+                  <List header="文章列表">
+                    {articleList.results.map((item) => (
+                      <List.Item
+                        key={item.art_id}
+                        prefix={
+                          <Image
+                            src={item.cover.images?.[0]}
+                            style={{ borderRadius: 20 }}
+                            fit="cover"
+                            width={40}
+                            height={40}
+                          />
+                        }
+                        description={item.pubdate}
+                      >
+                        {item.title}
+                      </List.Item>
+                    ))}
+                  </List>
+                  {/* 添加无限滚动页面的组件 */}
+                  <InfiniteScroll
+                    // 触发无限滚动的回调函数
+                    loadMore={loadMore}
+                    // 是否继续无限滚动的开关
+                    hasMore={hasMore}
+                    // 距离页面底部多少时触发？可选，默认是250px
+                    threshold={100}
+                  />
+                </>
+              );
+            };
+            ```
+
+    2. 加载下一页数据 ：per_timestamp接口数据
+
+        - 查看文档，需要上次请求的时间戳来进行下次请求
+
+            ![timestamp](md-assets/timestamp.png)
+
+    3. 把老数据和新数据拼接处理 ： [ ...oldList, ...newList ]
+
+    4. 停止监听边界值 ： hasMore
+
+        ```tsx
+        import { Image, InfiniteScroll, List } from "antd-mobile";
+        import { useEffect, useState } from "react";
+        import { ListRes, fetchListAPI } from "@/apis/list";
+        
+        // 定义params参数类型
+        type ParmasType = {
+          channelID: string;
+        };
+        export const HomeList = (params: ParmasType) => {
+          // 解构出params参数
+          const { channelID } = params;
+        
+          /* ------------------- 调用API接口，获取真实数据 ------------------- */
+          const [articleList, setArticleList] = useState<ListRes>({
+            results: [],
+            pre_timestamp: "" + new Date().getTime(),
+          });
+          useEffect(() => {
+            const getArticleList = async () => {
+              try {
+                const res = await fetchListAPI({
+                  channel_id: channelID, // 使用params参数
+                  timestamp: "" + new Date().getTime,
+                });
+                setArticleList({
+                  results: res.data.data.results,
+                  pre_timestamp: res.data.data.pre_timestamp,
+                });
+              } catch (error) {
+                throw new Error("fetchListAPI error");
+              }
+            };
+            getArticleList();
+          }, [channelID]);
+        
+          /* --------------------- 无限滚动页面加载的逻辑 -------------------- */
+          const [hasMore, setHasMore] = useState(true);
+        
+          // 注意：loadMore是异步函数，需要加async字段
+          const loadMore = async () => {
+            /* ----------------------- 页面无限滚动的逻辑 ---------------------- */
+            // 2. 发起下一次请求，加载下一页数据
+            try {
+              const res = await fetchListAPI({
+                channel_id: channelID,
+                // 需要上次请求的时间戳来进行下次请求
+                timestamp: articleList.pre_timestamp,
+              });
+              setArticleList({
+                // 3. 把老数据和新数据拼接处理 ： [ ...oldList, ...newList ]
+                results: [...articleList.results, ...res.data.data.results],
+                pre_timestamp: res.data.data.pre_timestamp,
+              });
+              // 4. 更新停止监听边界值 ： hasMore
+              if (res.data.data.results.length === 0) {
+                setHasMore(false);
+              }
+            } catch (error) {
+              throw new Error("fetchListAPI error");
+            }
+          };
+          return (
+            <>
+              <List header="文章列表">
+                {articleList.results.map((item) => (
+                  <List.Item
+                    key={item.art_id}
+                    prefix={
+                      <Image
+                        src={item.cover.images?.[0]}
+                        style={{ borderRadius: 20 }}
+                        fit="cover"
+                        width={40}
+                        height={40}
+                      />
+                    }
+                    description={item.pubdate}
+                  >
+                    {item.title}
+                  </List.Item>
+                ))}
+              </List>
+              {/* 添加无限滚动页面的组件 */}
+              <InfiniteScroll
+                // 触发无限滚动的回调函数
+                loadMore={loadMore}
+                // 是否继续无限滚动的开关
+                hasMore={hasMore}
+                // 距离页面底部多少时触发？可选，默认是250px
+                threshold={10}
+              />
+            </>
+          );
+        };
+        ```
+
+3. 优化—自定义hook，将逻辑和渲染相分离
+
+    - hooks文件夹下创建useLists钩子，并抽封逻辑代码
+
+        ```ts
+        import { ListRes, fetchListAPI } from "@/apis/list";
+        import { useEffect, useState } from "react";
+        
+        export const useLists = (channelID: string) => {
+          /* ------------------- 调用API接口，获取真实数据 ------------------- */
+          const [articleList, setArticleList] = useState<ListRes>({
+            results: [],
+            pre_timestamp: "" + new Date().getTime(),
+          });
+        
+          useEffect(() => {
+            const getArticleList = async () => {
+              try {
+                const res = await fetchListAPI({
+                  channel_id: channelID, // 使用params参数
+                  timestamp: "" + new Date().getTime,
+                });
+                setArticleList({
+                  results: res.data.data.results,
+                  pre_timestamp: res.data.data.pre_timestamp,
+                });
+              } catch (error) {
+                throw new Error("fetchListAPI error");
+              }
+            };
+            getArticleList();
+          }, [channelID]);
+        
+          /* --------------------- 无限滚动页面加载的逻辑 -------------------- */
+          const [hasMore, setHasMore] = useState(true);
+        
+          // 注意：loadMore是异步函数，需要加async字段
+          const loadMore = async () => {
+            /* ----------------------- 页面无限滚动的逻辑 ---------------------- */
+            // 2. 发起下一次请求，加载下一页数据
+            try {
+              const res = await fetchListAPI({
+                channel_id: channelID,
+                // 需要上次请求的时间戳来进行下次请求
+                timestamp: articleList.pre_timestamp,
+              });
+              setArticleList({
+                // 3. 把老数据和新数据拼接处理 ： [ ...oldList, ...newList ]
+                results: [...articleList.results, ...res.data.data.results],
+                pre_timestamp: res.data.data.pre_timestamp,
+              });
+              // 4. 更新停止监听边界值 ： hasMore
+              if (res.data.data.results.length === 0) {
+                setHasMore(false);
+              }
+            } catch (error) {
+              throw new Error("fetchListAPI error");
+            }
+          };
+        
+          return { articleList, hasMore, loadMore };
+        };
+        
+        ```
+
+    - HomeList组件中调用自定义钩子useLists，使用数据
+
+        ```tsx
+        import { Image, InfiniteScroll, List } from "antd-mobile";
+        import { useLists } from "@/hooks/useLists";
+        
+        // 定义params参数类型
+        type ParmasType = {
+          channelID: string;
+        };
+        export const HomeList = (params: ParmasType) => {
+          // 解构出params参数
+          const { channelID } = params;
+        
+          // 调用自定义hook，并解构出所需的数据和方法
+          const { articleList, hasMore, loadMore } = useLists(channelID);
+          return (
+            <>
+              <List header="文章列表">
+                {articleList.results.map((item) => (
+                  <List.Item
+                    key={item.art_id}
+                    prefix={
+                      <Image
+                        src={item.cover.images?.[0]}
+                        style={{ borderRadius: 20 }}
+                        fit="cover"
+                        width={40}
+                        height={40}
+                      />
+                    }
+                    description={item.pubdate}
+                  >
+                    {item.title}
+                  </List.Item>
+                ))}
+              </List>
+              {/* 添加无限滚动页面的组件 */}
+              <InfiniteScroll
+                // 触发无限滚动的回调函数
+                loadMore={loadMore}
+                // 是否继续无限滚动的开关
+                hasMore={hasMore}
+                // 距离页面底部多少时触发？可选，默认是250px
+                threshold={10}
+              />
+            </>
+          );
+        };
+        ```
+
+        
