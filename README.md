@@ -204,20 +204,111 @@
               }
             ```
 
-    4. 测试配置是否成功
+4. 测试配置是否成功
 
-        -  修改main.ts的路径
+    -  修改main.ts的路径
 
-            ```tsx
-            import ReactDOM from "react-dom/client";
-            import App from "@/App"; // 使用路径别名
-            import "@/index.css"; // 使用路径别名
-            
-            ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
-            ```
+        ```tsx
+        import ReactDOM from "react-dom/client";
+        import App from "@/App"; // 使用路径别名
+        import "@/index.css"; // 使用路径别名
+        
+        ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+        ```
 
-        - 键入@之后会有自定提示的引用文件
+    - 键入@之后会有自定提示的引用文件
 
-            
+
+
+### 4. 配置基础路由
+
+1. 安装路由包
+
+    ```bash
+    yarn add react-router-dom  
+    ```
+
+2. 创建基础page组件，用来匹配路由
+
+    - src文件下创建pages文件夹，并创建Home和Detail页面组件
+
+    - Home组件文件夹下创建index组件界面
+
+        ```tsx
+        const Home = () => {
+          return (
+            <>
+              <p>this is Home</p>
+            </>
+          );
+        };
+        export default Home;
+        ```
+
+    - Detail组件文件夹下创建index组件界面
+
+        ```tsx
+        const Detail = () => {
+          return (
+            <>
+              <p>this is Detail</p>
+            </>
+          );
+        };
+        export default Detail;
+        ```
+
+3. 创建路由表文件
+
+    -  src文件下创建router文件夹，并创建index.tsx路由文件( 注意：这里是tsx格式，ts或js的话，类型报错)
+
+    - index.ts文件中配置路由： 使用**createBrowserRouter**方法创建router实例并导出，createBrowserRouter方法插入配置数组对象（一个一个路由对象）
+
+        ```ts
+        import { createBrowserRouter } from "react-router-dom";
+        import Home from "@/pages/Home";
+        import Detail from "@/pages/Detail/index";
+        
+        const router = createBrowserRouter([
+          {
+            path: "/",
+            element: "<Home/>",
+          },
+          {
+            path: "/detail",
+            element: "<Detail/>",
+          },
+        ]);
+        
+        export { router };
+        ```
+
+4. Main.ts文件中导入路由表
+
+    - 引入RouterProvider，并传入router对象
+
+        ```tsx
+        import ReactDOM from "react-dom/client";
+        // import App from "@/App";
+        import "@/index.css";
+        
+        
+        import { RouterProvider } from "react-router-dom";
+        import { router } from "@/router";
+        
+        ReactDOM.createRoot(document.getElementById("root")!).render(
+          <RouterProvider router={router} /> // 这里替换掉App组件
+        );
+        ```
+
+5. 测试配置是否成功
+    - http://localhost:5173/
+    - http://localhost:5173/detail
+
+
+
+
+
+
 
 ​		
