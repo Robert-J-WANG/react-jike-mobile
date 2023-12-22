@@ -669,6 +669,74 @@
 
 4. tab布局的优化 - 数据和布局相分离
 
+    - 场景：当前状态数据的各种操作逻辑和组件的渲染是写在一起的，可以采用自定义hook封装，让逻辑和渲染相分离
+
+        ![useTabs](md-assets/useTabs.png)
+
+    - 步骤：
+
+        1. 把和Tabs相关的响应式数据状态以及操作数据的方法放到自定义hook函数中
+        
+            - src先创建hooks文件夹，并创建**useTabs** 自定义hook函数，并导出
+        
+                ```ts
+                import { ChannelItem, fetchChannelAPI } from "@/apis/list";
+                import { useState, useEffect } from "react";
+                
+                export const useTabs = () => {
+                  // 1. 创建状态变量，并使用泛型ChannelItem[]来限定useState返回值的类型
+                  const [channels, setChannels] = useState<ChannelItem[]>([]);
+                
+                  // 2.  调用api接口获取真实数据
+                  useEffect(() => {
+                    const getChannels = async () => {
+                      try {
+                        const res = await fetchChannelAPI();
+                        // 3.  保存数据到状态变量中
+                        setChannels(res.data.data.channels);
+                      } catch (error) {
+                        throw new Error("fetch channel API error: " + error);
+                      }
+                    };
+                    getChannels();
+                  }, []);
+                
+                  return { channels };
+                };
+                ```
+        
+        2. 组件中调用自定义hook函数，消费其返回的数据和方法
+        
+            - HOME组件中调用useTabs钩子，并解构出channels 使用
+        
+                ```tsx
+                import { useTabs } from "@/hooks/useTabs";
+                import "@/pages/Home/index.css";
+                import { Tabs } from "antd-mobile";
+                const Home = () => {
+                  // 组件中调用自定义hook函数，消费其返回的数据和方法
+                  const { channels } = useTabs();
+                  return (
+                    <>
+                      <div className="tabContainer">
+                        {/* tab标签布局区域 */}
+                        <Tabs defaultActiveKey="1">
+                          {/* 动态渲染数据到组件中 */}
+                          {channels.map((item) => (
+                            <Tabs.Tab title={item.name} key={item.id}>
+                              {/* list组件 */}
+                            </Tabs.Tab>
+                          ))}
+                        </Tabs>
+                      </div>
+                    </>
+                  );
+                };
+                export default Home;
+                ```
+        
+                
+
 5. 发斯蒂
 
     
