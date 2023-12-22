@@ -734,11 +734,329 @@
                 };
                 export default Home;
                 ```
+
+      
+
+### 8. Home模块—List组件数据渲染
+
+1. 搭建基础结构，并获取基础数据
+
+    - Home组件文件夹先创建HomeList组件，并粘贴ant Design Mobile的List组件布局文件及mock数据
+
+        ```tsx
+        import { Image, List } from "antd-mobile";
         
-                
+        // mock数据
+        import { users } from "./users";
+        
+        export const HomeList = () => {
+          return (
+            <List header="用户列表">
+              {users.map((user) => (
+                <List.Item
+                  key={user.name}
+                  prefix={
+                    <Image
+                      src={user.avatar}
+                      style={{ borderRadius: 20 }}
+                      fit="cover"
+                      width={40}
+                      height={40}
+                    />
+                  }
+                  description={user.description}
+                >
+                  {user.name}
+                </List.Item>
+              ))}
+            </List>
+          );
+        };
+        ```
 
-5. 发斯蒂
+        ```ts
+        // users.ts文件mock数据
+        
+        export const users = [
+          {
+            id: "1",
+            avatar:
+              "https://images.unsplash.com/photo-1548532928-b34e3be62fc6?ixlib=rb-1.2.1&q=80&fm=jpg&crop=faces&fit=crop&h=200&w=200&ixid=eyJhcHBfaWQiOjE3Nzg0fQ",
+            name: "Novalee Spicer",
+            description: "Deserunt dolor ea eaque eos",
+          },
+          {
+            id: "2",
+            avatar:
+              "https://images.unsplash.com/photo-1493666438817-866a91353ca9?ixlib=rb-0.3.5&q=80&fm=jpg&crop=faces&fit=crop&h=200&w=200&s=b616b2c5b373a80ffc9636ba24f7a4a9",
+            name: "Sara Koivisto",
+            description: "Animi eius expedita, explicabo",
+          },
+          {
+            id: "3",
+            avatar:
+              "https://images.unsplash.com/photo-1542624937-8d1e9f53c1b9?ixlib=rb-1.2.1&q=80&fm=jpg&crop=faces&fit=crop&h=200&w=200&ixid=eyJhcHBfaWQiOjE3Nzg0fQ",
+            name: "Marco Gregg",
+            description: "Ab animi cumque eveniet ex harum nam odio omnis",
+          },
+          {
+            id: "4",
+            avatar:
+              "https://images.unsplash.com/photo-1546967191-fdfb13ed6b1e?ixlib=rb-1.2.1&q=80&fm=jpg&crop=faces&fit=crop&h=200&w=200&ixid=eyJhcHBfaWQiOjE3Nzg0fQ",
+            name: "Edith Koenig",
+            description: "Commodi earum exercitationem id numquam vitae",
+          },
+        ];
+        
+        ```
 
-    
+    - Home组件中使用HomeList组件
 
-     
+        ```tsx
+        import { useTabs } from "@/hooks/useTabs";
+        import "@/pages/Home/index.css";
+        import { Tabs } from "antd-mobile";
+        import { HomeList } from "./HomeList";
+        const Home = () => {
+          // 组件中调用自定义hook函数，消费其返回的数据和方法
+          const { channels } = useTabs();
+          return (
+            <>
+              <div className="tabContainer">
+                {/* tab标签布局区域 */}
+                <Tabs defaultActiveKey="1">
+                  {/* 动态渲染数据到组件中 */}
+                  {channels.map((item) => (
+                    <Tabs.Tab title={item.name} key={item.id}>
+                      {/* list组件 */}
+                      <HomeList />
+                    </Tabs.Tab>
+                  ))}
+                </Tabs>
+              </div>
+            </>
+          );
+        };
+        export default Home;
+        ```
+
+    - 定义请求文章列表的api ： 根据接口文档定义请求参数和响应数据的类型
+
+        ```ts
+        import { http } from "@/utils";
+        
+        /* --------------------- channel数据部分 -------------------- */
+        //定义具体的接口数据类型（channel的类型）
+        export type ChannelItem = {
+          id: number;
+          name: string;
+        };
+        
+        //2. channels的类型
+        type ChannelRes = {
+          channels: ChannelItem[];
+        };
+        
+        // 定义请求频道列表的api,并传入数据类型(组合上面的 1 和 2 类型)
+        export const fetchChannelAPI = () => {
+          return http.request<ResType<ChannelRes>>({
+            url: "/channels",
+          });
+        };
+        
+        /* ----------------------- 文章列表数据部分 ----------------------- */
+        // 定义文章数据对象类型
+        type ListItem = {
+          art_id: string;
+          title: string;
+          aut_id: string;
+          comm_count: number;
+          pubdate: string;
+          aut_name: string;
+          is_top: 0 | 1;
+          cover: {
+            type: string;
+            images: string[];
+          };
+        };
+        
+        type ListRes = {
+          results: ListItem[];
+          pre_timestamp: string;
+        };
+        
+        // 请求参数类型
+        type ParmasType = {
+          channel_id: string;
+          timestamp: string;
+        };
+        
+        // 定义获取文章列表的API
+        export const fetchListAPI = (params: ParmasType) => {
+          return http.request<ResType<ListRes>>({
+            url: "articles",
+            params,
+          });
+        };
+        ```
+
+    - 调用API接口，获取真实数据，并渲染文章列表到页面
+
+        ```tsx
+        import { Image, List } from "antd-mobile";
+        
+        // // mock数据
+        // import { users } from "./users";
+        import { useEffect, useState } from "react";
+        import { ListRes, fetchListAPI } from "@/apis/list";
+        
+        export const HomeList = () => {
+          /* ------------------- 调用API接口，获取真实数据 ------------------- */
+          const [articleList, setArticleList] = useState<ListRes>({
+            results: [],
+            pre_timestamp: "" + new Date().getTime(),
+          });
+          useEffect(() => {
+            const getArticleList = async () => {
+              try {
+                const res = await fetchListAPI({
+                  channel_id: "0",
+                  timestamp: "" + new Date().getTime,
+                });
+                setArticleList({
+                  results: res.data.data.results,
+                  pre_timestamp: res.data.data.pre_timestamp,
+                });
+              } catch (error) {
+                throw new Error("fetchListAPI error");
+              }
+            };
+            getArticleList();
+          }, []);
+          return (
+            <List header="文章列表">
+              {articleList.results.map((item) => (
+                <List.Item
+                  key={item.art_id}
+                  prefix={
+                    <Image
+                      src={item.cover.images?.[0]}
+                      style={{ borderRadius: 20 }}
+                      fit="cover"
+                      width={40}
+                      height={40}
+                    />
+                  }
+                  description={item.pubdate}
+                >
+                  {item.title}
+                </List.Item>
+              ))}
+            </List>
+          );
+        };
+        ```
+
+2. 为组件设计channelID参数，点击tab时传入不同的参数
+
+    - 给HomeList组件添加参数，用来绑定不同的tab
+
+        ```tsx
+        import { Image, List } from "antd-mobile";
+        import { useEffect, useState } from "react";
+        import { ListRes, fetchListAPI } from "@/apis/list";
+        
+        // 定义params参数类型
+        type ParmasType = {
+          channelID: string;
+        };
+        export const HomeList = (params: ParmasType) => {
+          // 解构出params参数
+          const { channelID } = params;
+        
+          /* ------------------- 调用API接口，获取真实数据 ------------------- */
+          const [articleList, setArticleList] = useState<ListRes>({
+            results: [],
+            pre_timestamp: "" + new Date().getTime(),
+          });
+          useEffect(() => {
+            const getArticleList = async () => {
+              try {
+                const res = await fetchListAPI({
+                  channel_id: channelID, // 使用params参数
+                  timestamp: "" + new Date().getTime,
+                });
+                setArticleList({
+                  results: res.data.data.results,
+                  pre_timestamp: res.data.data.pre_timestamp,
+                });
+              } catch (error) {
+                throw new Error("fetchListAPI error");
+              }
+            };
+            getArticleList();
+          }, []);
+          return (
+            <List header="文章列表">
+              {articleList.results.map((item) => (
+                <List.Item
+                  key={item.art_id}
+                  prefix={
+                    <Image
+                      src={item.cover.images?.[0]}
+                      style={{ borderRadius: 20 }}
+                      fit="cover"
+                      width={40}
+                      height={40}
+                    />
+                  }
+                  description={item.pubdate}
+                >
+                  {item.title}
+                </List.Item>
+              ))}
+            </List>
+          );
+        };
+        ```
+
+    - Home组件把channelID值传递过去
+
+        ```tsx
+        import { useTabs } from "@/hooks/useTabs";
+        import "@/pages/Home/index.css";
+        import { Tabs } from "antd-mobile";
+        import { HomeList } from "./HomeList";
+        const Home = () => {
+          // 组件中调用自定义hook函数，消费其返回的数据和方法
+          const { channels } = useTabs();
+          return (
+            <>
+              <div className="tabContainer">
+                {/* tab标签布局区域 */}
+                <Tabs defaultActiveKey="1">
+                  {/* 动态渲染数据到组件中 */}
+                  {channels.map((item) => (
+                    <Tabs.Tab title={item.name} key={item.id}>
+                      {/* list组件 */}
+        
+                      <HomeList
+                        //把channelID传递过去，数值item.id转换为字符串
+                        channelID={"" + item.id}
+                      />
+                      
+                    </Tabs.Tab>
+                  ))}
+                </Tabs>
+              </div>
+            </>
+          );
+        };
+        export default Home;
+        ```
+
+        
+
+3. 实现上拉加载功能
+
+4. 发生的发生的 
