@@ -307,6 +307,76 @@
 
 
 
+### 5. axios基础封装
+
+1. 使用场景：axios作为最流行的请求插件，同样是类型友好的，基于axios做一下基础封装
+
+2. 步骤
+
+    1.  安装axios到项目
+
+        ```bash
+        yarn add axios  
+        ```
+
+    2. 在utils中封装http模块，主要包括接口基地址，超时时间，拦截器
+
+        - src下新建utils文件夹，并创建http.ts文件
+        - http.ts文件中使用axios.**create**方法创建http请求实例httpInstance，并掺入配置对象（设置基路径和请求响应时间）
+
+        -  设置请求拦截器和响应拦截器
+
+        - 导出http请求实例httpInstance
+
+            ```ts
+            import axios from "axios";
+            
+            // 创建http请求实例httpInstance
+            const httpInstance = axios.create({
+              baseURL: "http://geek.itheima.net",
+              timeout: 5000,
+            });
+            
+            // 添加请求拦截器
+            httpInstance.interceptors.request.use(
+              (config) => {
+                return config;
+              },
+              (error) => {
+                return Promise.reject(error);
+              }
+            );
+            
+            // 添加响应拦截器
+            httpInstance.interceptors.response.use(
+              (response) => {
+                // 2xx 范围内的状态码都会触发该函数。
+                // 对响应数据做点什么
+                return response;
+              },
+              (error) => {
+                // 超出 2xx 范围的状态码都会触发该函数。
+                // 对响应错误做点什么
+                return Promise.reject(error);
+              }
+            );
+            
+            // 导出http请求实例
+            export { httpInstance };
+            ```
+
+    3. 在utils中做统一导出
+
+        -  utils下创建index.ts文件，用于统一导出http请求的中转
+
+            ```ts
+            import { httpInstance } from "@/utils/http";
+            
+            export { httpInstance as http };
+            ```
+
+3. 使用： 在所需的api中导入http并使用
+
 
 
 
