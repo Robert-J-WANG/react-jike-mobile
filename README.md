@@ -333,7 +333,7 @@
             
             // 创建http请求实例httpInstance
             const httpInstance = axios.create({
-              baseURL: "http://geek.itheima.net",
+             baseURL: 'http://geek.itheima.net/v1_0',
               timeout: 5000,
             });
             
@@ -379,6 +379,169 @@
 
 
 
+### 6. 封装api模块 - axios和ts的配合使用
 
+1. 场景：
 
-​		
+    -   axios提供了request泛型方法，方便我们传入类型参数推导出接口返回值的类型
+
+        ```ts
+        axios.request<Type>(requestConfig).then(res=>{
+        	console.log(res.data)
+        })
+        ```
+
+    - 说明：我们需要根据返回值的类型，自定义泛型参数Type，并传入给request方法。这样泛型参数Type的类型就决定了res.data的类型
+
+2. 步骤：
+
+    1. 根据接口文档创建一个通用的泛型接口类型（多个接口返回值的结构是相似的）
+
+    2. 根据接口文档创建特有的接口数据类型（每个接口有自己特殊的数据格式）
+
+    3. 组合1和2的类型，得到最终的request泛型的参数类型
+
+        ![api-dataType](md-assets/api-dataType.png)
+
+3.  实现
+
+    1. src文件夹先创建apis模块，新建list.ts文档
+
+    2. list.ts文档中定义数据类型，并创建请求列表的api接口方法，并导出
+
+        ```ts
+        import { http } from "@/utils";
+        
+        //1. 定义通用的泛型参数:传递不同的T，定义不同的data类型
+        type ResType<T> = {
+          data: T;
+          message: string;
+        };
+        
+        //定义具体的接口数据类型（channel的类型）
+        type ChannelItem = {
+          id: number;
+          name: string;
+        };
+        
+        //2. channels的类型
+        type ChannelRes = {
+          channels: ChannelItem[];
+        };
+        
+        // 定义请求频道列表的api,并传入数据类型(组合上面的 1 和 2 类型)
+        export const fetchChannelAPI = () => {
+          return http.request<ResType<ChannelRes>>({
+            url: "/channels",
+          });
+        };
+        
+        ```
+
+4. 测试接口
+
+    - main.ts文件中导入fetchChannelAPI接口，并使用
+
+        ```tsx
+        import ReactDOM from "react-dom/client";
+        import "@/index.css";
+        
+        import { RouterProvider } from "react-router-dom";
+        import { router } from "@/router";
+        import { fetchChannelAPI } from "@/apis/list";
+        
+        // api接口测试
+        fetchChannelAPI().then((res) => {
+          console.log(res.data.data.channels);
+        });
+        
+        ReactDOM.createRoot(document.getElementById("root")!).render(
+          <RouterProvider router={router} />
+        );
+        ```
+
+        
+
+5. 优化： 将通用的泛型参数定义，提取出来，能让其他api接口导入使用
+
+    - api下新建文件sharedType.ts
+
+    - sharedType.ts文件中创建通用的泛型参数，并导出
+
+        ```ts
+        export type ResType<T> = {
+          data: T;
+          message: string;
+        };
+        ```
+
+    - list.ts文档中直接导入，并使用
+
+        ```tsx
+        import { http } from "@/utils";
+        
+        // 导入通用的泛型参数
+        import { ResType } from "@/apis/sharedType";
+        
+        //定义具体的接口数据类型（channel的类型）
+        type ChannelItem = {
+          id: number;
+          name: string;
+        };
+        
+        //2. channels的类型
+        type ChannelRes = {
+          channels: ChannelItem[];
+        };
+        
+        // 定义请求频道列表的api,并传入数据类型
+        export const fetchChannelAPI = () => {
+          return http.request<ResType<ChannelRes>>({
+            url: "/channels",
+          });
+        };
+        ```
+
+        
+
+6. vite工具通用的泛型参数的设置
+
+    - 使用vite工具时，也可以将通用的泛型参数写入vite-env.d.ts中，这样，不需要导出，使用时也不需要导入
+
+    - src文件夹下的vite-env.d.ts文件中定义通用的泛型参数
+
+        ```ts
+        /// <reference types="vite/client" />
+        
+        // api接口响应参数的泛型（公共部分）
+        type ResType<T> = {
+          data: T;
+          message: string;
+        };
+        ```
+
+    - list.ts文档中无需导入直接使用即可
+
+        ```ts
+        import { http } from "@/utils";
+        
+        //定义具体的接口数据类型（channel的类型）
+        type ChannelItem = {
+          id: number;
+          name: string;
+        };
+        
+        //2. channels的类型
+        type ChannelRes = {
+          channels: ChannelItem[];
+        };
+        
+        // 定义请求频道列表的api,并传入数据类型
+        export const fetchChannelAPI = () => {
+          return http.request<ResType<ChannelRes>>({ // 不需要导入通用的泛型参数ResType，直接使用
+            url: "/channels",
+          });
+        };
+        ```
+
+        
