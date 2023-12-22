@@ -57,7 +57,7 @@
 
 7. 整理文件结构，生成空白页面
 
-    - 删除src下的部分文件，只保留App.tsx, index.css, main.tsx, cite-env.d.ts
+    - 删除src下的部分文件，只保留App.tsx, main.tsx, cite-env.d.ts
 
     - 清理App.tsx的内容
 
@@ -73,7 +73,6 @@
         ```tsx
         import ReactDOM from "react-dom/client";
         import App from "./App.tsx";
-        import "./index.css";
         
         ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
         ```
@@ -211,12 +210,11 @@
         ```tsx
         import ReactDOM from "react-dom/client";
         import App from "@/App"; // 使用路径别名
-        import "@/index.css"; // 使用路径别名
         
         ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
         ```
-
-    - 键入@之后会有自定提示的引用文件
+        
+- 键入@之后会有自定提示的引用文件
 
 
 
@@ -290,7 +288,6 @@
         ```tsx
         import ReactDOM from "react-dom/client";
         // import App from "@/App";
-        import "@/index.css";
         
         
         import { RouterProvider } from "react-router-dom";
@@ -300,7 +297,7 @@
           <RouterProvider router={router} /> // 这里替换掉App组件
         );
         ```
-
+    
 5. 测试配置是否成功
     - http://localhost:5173/
     - http://localhost:5173/detail
@@ -444,7 +441,6 @@
 
         ```tsx
         import ReactDOM from "react-dom/client";
-        import "@/index.css";
         
         import { RouterProvider } from "react-router-dom";
         import { router } from "@/router";
@@ -459,7 +455,6 @@
           <RouterProvider router={router} />
         );
         ```
-
         
 
 5. 优化： 将通用的泛型参数定义，提取出来，能让其他api接口导入使用
@@ -544,4 +539,138 @@
         };
         ```
 
+    
+
+### 7. Home模块—Channels基础数据渲染
+
+1. 模块组件设计：
+
+    - 整体组件嵌套设计
+
+        ![homeDesign](md-assets/homeDesign.png)
+
+    - 说明：点击不同的标签，切换不同的内容
+
+2. 基础布局的搭建
+
+    - Home文件夹下样式文件index.css
+
+        ```css
+        .tabContainer{
+          position: fixed;
+          height: 50px;
+          top: 0;
+          width: 100%;
+        }
+        .listContainer{
+          position: fixed;
+          top: 50px;
+          bottom: 0;
+          width: 100%;
+        }
+        ```
+
+    - 组件中引入index.css样式，并创建tab布局容器
+
+        ```tsx
+        import "@/pages/Home/index.css";
+        const Home = () => {
+          return (
+            <>
+              <div className="tabContainer">
+                {/* tab标签布局区域 */}
+                this is Home
+              </div>
+            </>
+          );
+        };
+        export default Home;
+        ```
+
+3. tab布局区域实现步骤
+
+    - 使用ant-mobile组件库中的Tabs组件进行页面结构的创建
+
+        ```tsx
+        import "@/pages/Home/index.css";
+        import { Tabs } from "antd-mobile";
+        const Home = () => {
+          return (
+            <>
+              <div className="tabContainer">
+                {/* tab标签布局区域 */}
+                <Tabs>
+                  <Tabs.Tab title="水果" key="fruits">
+                    {/* list组件 */}
+                    菠萝
+                  </Tabs.Tab>
+                  <Tabs.Tab title="蔬菜" key="vegetables">
+                    {/* list组件 */}
+                    西红柿
+                  </Tabs.Tab>
+                  <Tabs.Tab title="动物" key="animals">
+                    {/* list组件 */}
+                    蚂蚁
+                  </Tabs.Tab>
+                </Tabs>
+              </div>
+            </>
+          );
+        };
+        export default Home;
+        ```
+
+    - 使用真实接口数据进行渲染(调用已经封装的接口)
+
+        ```tsx
+        import { ChannelItem, fetchChannelAPI } from "@/apis/list";
+        import "@/pages/Home/index.css";
+        import { Tabs } from "antd-mobile";
+        import { useEffect, useState } from "react";
         
+        const Home = () => {
+            
+          // 1. 创建状态变量，并使用泛型ChannelItem[]来限定useState返回值的类型
+          const [channels, setChannels] = useState<ChannelItem[]>([]);
+        
+          // 2.  调用api接口获取真实数据
+          useEffect(() => {
+            const getChannels = async () => {
+              try {
+                const res = await fetchChannelAPI();
+                // 3.  保存数据到状态变量中
+                setChannels(res.data.data.channels);
+              } catch (error) {
+                throw new Error("fetch channel API error: " + error);
+              }
+            };
+            getChannels();
+          }, []);
+          return (
+            <>
+              <div className="tabContainer">
+                {/* tab标签布局区域 */}
+                <Tabs defaultActiveKey="1">
+        
+                  {/* 4. 动态渲染数据到组件中 */}
+                  {channels.map((item) => (
+                    <Tabs.Tab title={item.name} key={item.id}>
+                      {/* list组件 */}
+                    </Tabs.Tab>
+                  ))}
+                  
+                </Tabs>
+              </div>
+            </>
+          );
+        };
+        export default Home;
+        ```
+
+4. tab布局的优化 - 数据和布局相分离
+
+5. 发斯蒂
+
+    
+
+     

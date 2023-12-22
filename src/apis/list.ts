@@ -8,7 +8,7 @@ import { http } from "@/utils";
 // };
 
 //定义具体的接口数据类型（channel的类型）
-type ChannelItem = {
+export type ChannelItem = {
   id: number;
   name: string;
 };
