@@ -1413,3 +1413,356 @@
         ```
 
         
+
+### 10. Detail模块—路由跳转和数据渲染
+
+1. 需求：点击文章列表某一项，跳转对应的文章详情页
+
+    ![detail](md-assets/detail.png)
+
+2. 步骤：
+
+    1. 通过路由跳转方法进行跳转，并传递参数（id)
+
+        - 自定义钩子中编写路由跳转逻辑
+
+        ```ts
+        import { ListRes, fetchListAPI } from "@/apis/list";
+        import { useEffect, useState } from "react";
+        import { useNavigate } from "react-router-dom";
+        
+        export const useLists = (channelID: string) => {
+          /* ------------------- 调用API接口，获取真实数据 ------------------- */
+          const [articleList, setArticleList] = useState<ListRes>({
+            results: [],
+            pre_timestamp: "" + new Date().getTime(),
+          });
+        
+          useEffect(() => {
+            const getArticleList = async () => {
+              try {
+                const res = await fetchListAPI({
+                  channel_id: channelID, // 使用params参数
+                  timestamp: "" + new Date().getTime,
+                });
+                setArticleList({
+                  results: res.data.data.results,
+                  pre_timestamp: res.data.data.pre_timestamp,
+                });
+              } catch (error) {
+                throw new Error("fetchListAPI error");
+              }
+            };
+            getArticleList();
+          }, [channelID]);
+        
+          /* --------------------- 无限滚动页面加载的逻辑 -------------------- */
+          const [hasMore, setHasMore] = useState(true);
+        
+          // 注意：loadMore是异步函数，需要加async字段
+          const loadMore = async () => {
+            /* ----------------------- 页面无限滚动的逻辑 ---------------------- */
+            // 2. 发起下一次请求，加载下一页数据
+            try {
+              const res = await fetchListAPI({
+                channel_id: channelID,
+                // 需要上次请求的时间戳来进行下次请求
+                timestamp: articleList.pre_timestamp,
+              });
+              setArticleList({
+                // 3. 把老数据和新数据拼接处理 ： [ ...oldList, ...newList ]
+                results: [...articleList.results, ...res.data.data.results],
+                pre_timestamp: res.data.data.pre_timestamp,
+              });
+              // 4. 更新停止监听边界值 ： hasMore
+              if (res.data.data.results.length === 0) {
+                setHasMore(false);
+              }
+            } catch (error) {
+              throw new Error("fetchListAPI error");
+            }
+          };
+        
+          /* ----------------------- 跳转路由逻辑 ----------------------- */
+          const navigate = useNavigate();
+          // 跳转详情路由的回调, 并携带参数id
+          const goToDetail = (id: string) => {
+            navigate(`/detail?id=${id}`);
+          };
+        
+          return { articleList, hasMore, loadMore, goToDetail };
+        };
+        
+        ```
+
+        - 给list注册点击事件，实现点击跳转，并携带参数id过去
+
+        ```tsx
+        import { Image, InfiniteScroll, List } from "antd-mobile";
+        import { useLists } from "@/hooks/useLists";
+        
+        // 定义params参数类型
+        type ParmasType = {
+          channelID: string;
+        };
+        export const HomeList = (params: ParmasType) => {
+          // 解构出params参数
+          const { channelID } = params;
+        
+          // 调用自定义hook，并解构出所需的数据和方法
+          const { articleList, hasMore, loadMore, goToDetail } = useLists(channelID);
+          return (
+            <>
+              <List header="文章列表">
+                {articleList.results.map((item) => (
+                  <List.Item
+                    key={item.art_id}
+                    prefix={
+                      <Image
+                        src={item.cover.images?.[0]}
+                        style={{ borderRadius: 20 }}
+                        fit="cover"
+                        width={40}
+                        height={40}
+                      />
+                    }
+                    description={item.pubdate}
+                    
+                    // 点击跳转路由，并携带参数id
+                    onClick={() => goToDetail(item.art_id)}
+                  >
+                    {item.title}
+                  </List.Item>
+                ))}
+              </List>
+              {/* 添加无限滚动页面的组件 */}
+              <InfiniteScroll
+                // 触发无限滚动的回调函数
+                loadMore={loadMore}
+                // 是否继续无限滚动的开关
+                hasMore={hasMore}
+                // 距离页面底部多少时触发？可选，默认是250px
+                threshold={10}
+              />
+            </>
+          );
+        };
+        ```
+
+    2. 在详情路由下获取参数，并请求数据
+
+        - 封装获取文章请求的接口：根据接口文档，定义数据类型
+        - apis文件夹下新建detail.ts，并编写封装逻辑
+
+        ```ts
+        import { http } from "@/utils";
+        
+        // 定义数据类型
+        /**
+         * 响应数据
+         */
+        export type DetailDataRes = {
+          /**
+           * 文章id
+           */
+          art_id: string;
+          /**
+           * 文章-是否被点赞，-1无态度, 0未点赞, 1点赞, 是当前登录用户对此文章的态度
+           */
+          attitude: number;
+          /**
+           * 文章作者id
+           */
+          aut_id: string;
+          /**
+           * 文章作者名
+           */
+          aut_name: string;
+          /**
+           * 文章作者头像，无头像, 默认为null
+           */
+          aut_photo: string;
+          /**
+           * 文章_评论总数
+           */
+          comm_count: number;
+          /**
+           * 文章内容
+           */
+          content: string;
+          /**
+           * 文章-是否被收藏，true(已收藏)false(未收藏)是登录的用户对此文章的收藏状态
+           */
+          is_collected: boolean;
+          /**
+           * 文章作者-是否被关注，true(关注)false(未关注), 说的是当前登录用户对这个文章作者的关注状态
+           */
+          is_followed: boolean;
+          /**
+           * 文章_点赞总数
+           */
+          like_count: number;
+          /**
+           * 文章发布时间
+           */
+          pubdate: string;
+          /**
+           * 文章_阅读总数
+           */
+          read_count: number;
+          /**
+           * 文章标题
+           */
+          title: string;
+        };
+        
+        // 封装api接口
+        export const fetchDetailApi = (article_id: string) => {
+          return http.request<ResType<DetailDataRes>>({
+            url: `articles/${article_id}`,
+          });
+        };
+        ```
+
+        - 封装自定义钩子，获取文章详情数据
+
+        ```ts
+        import { DetailDataRes, fetchDetailApi } from "@/apis/detail";
+        import { useEffect, useState } from "react";
+        import { useSearchParams } from "react-router-dom";
+        
+        export const useDetails = () => {
+          const [detail, setDetail] = useState<DetailDataRes | null>(null);
+        
+          // 获取路由参数
+          const [searchParams] = useSearchParams();
+          const id = searchParams.get("id");
+        
+          // 调用接口获取数据
+          useEffect(() => {
+            const getDetail = async () => {
+              const res = await fetchDetailApi(id!); // (id!)添加！解决类型错误
+              setDetail(res.data.data);
+            };
+            getDetail();
+          }, [id]);
+        
+          return { detail };
+        };
+        ```
+
+    3. 渲染数据到页面
+
+        - 自定义hook中添加返回的逻辑
+
+        ```ts
+        import { DetailDataRes, fetchDetailApi } from "@/apis/detail";
+        import { useEffect, useState } from "react";
+        import { useNavigate, useSearchParams } from "react-router-dom";
+        
+        export const useDetails = () => {
+          const [detail, setDetail] = useState<DetailDataRes | null>(null);
+        
+          // 获取路由参数
+          const [searchParams] = useSearchParams();
+          const id = searchParams.get("id");
+        
+          // 调用接口获取数据
+          useEffect(() => {
+            const getDetail = async () => {
+              const res = await fetchDetailApi(id!); // (id!)添加！解决类型错误
+              setDetail(res.data.data);
+            };
+            getDetail();
+          }, [id]);
+        
+          // 返回按钮的回调
+          const navigate = useNavigate();
+          const goBack = () => {
+            navigate(-1);
+          };
+        
+          return { detail, goBack };
+        };
+        ```
+
+        - Detail组件中调用自定义hook，解构出状态数据并渲染
+
+        ```tsx
+        import { useDetails } from "@/hooks/useDetails";
+        import { NavBar } from "antd-mobile";
+        
+        const Detail = () => {
+          const { detail, goBack } = useDetails();
+        
+          // 设置未获取数据之前加载项，可防止返回值时带标签的字符串的渲染时的类型错误
+          if (!detail) {
+            return <div>Loading...</div>;
+          }
+          // 获取数据之后渲染
+          return (
+            <>
+              <NavBar onBack={goBack}>{detail?.aut_name}</NavBar>
+              {/* 关于返回值时带标签的字符串的渲染 */}
+              {/* content: "<p>22222</p>" */}
+              <div dangerouslySetInnerHTML={{ __html: detail?.content }}></div>
+            </>
+          );
+        };
+        export default Detail;
+        ```
+
+3. 注意事项：
+
+    - 对于返回参数是带标签字符串的渲染
+
+        ![text](md-assets/text.png)
+
+    - 不能直接渲染到页面，无法识别标签
+
+         ```tsx
+           return (
+             <>
+               <NavBar onBack={goBack}>{detail?.aut_name}</NavBar>
+               {/* 直接渲染无法识别标签 */}
+              <div>{detail.content}</div>
+             </>
+           );
+         ```
+    
+    - 要使用 dangerouslySetInnerHTML**=**{ __html**:** string **|** TrustedHTML} 属性，将返回的数据赋值给__配置对象的“__html”属性
+    
+         ```tsx
+         return (
+             <>
+               <NavBar onBack={goBack}>{detail?.aut_name}</NavBar>
+               {/* 关于返回值时带标签的字符串的渲染 */}
+               {/* content: "<p>22222</p>" */}
+               <div dangerouslySetInnerHTML={{ __html: detail?.content }}></div>
+             </>
+           );
+         ```
+    
+    - 但是会有类型不匹配问题，应为返回值有可能是空值
+    
+        ![typeError](md-assets/typeError.png)
+    
+    - 可以在渲染页面之前，添加判断，如果没有返回数据，则渲染loading, 否则，才会渲染返回的内容
+    
+        ```tsx
+        // 设置未获取数据之前加载项，可防止返回值时带标签的字符串的渲染时的类型错误
+          if (!detail) {
+            return <div>Loading...</div>;
+          }
+          // 获取数据之后渲染
+          return (
+            <>
+              <NavBar onBack={goBack}>{detail?.aut_name}</NavBar>
+              {/* 关于返回值时带标签的字符串的渲染 */}
+              {/* content: "<p>22222</p>" */}
+              <div dangerouslySetInnerHTML={{ __html: detail?.content }}></div>
+            </>
+          );
+        ```
+    
+        

@@ -10,7 +10,7 @@ export const HomeList = (params: ParmasType) => {
   const { channelID } = params;
 
   // 调用自定义hook，并解构出所需的数据和方法
-  const { articleList, hasMore, loadMore } = useLists(channelID);
+  const { articleList, hasMore, loadMore, goToDetail } = useLists(channelID);
   return (
     <>
       <List header="文章列表">
@@ -27,6 +27,8 @@ export const HomeList = (params: ParmasType) => {
               />
             }
             description={item.pubdate}
+            // 点击跳转路由，并携带参数id
+            onClick={() => goToDetail(item.art_id)}
           >
             {item.title}
           </List.Item>

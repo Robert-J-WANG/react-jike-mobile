@@ -1,5 +1,6 @@
 import { ListRes, fetchListAPI } from "@/apis/list";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const useLists = (channelID: string) => {
   /* ------------------- 调用API接口，获取真实数据 ------------------- */
@@ -53,5 +54,12 @@ export const useLists = (channelID: string) => {
     }
   };
 
-  return { articleList, hasMore, loadMore };
+  /* ----------------------- 跳转路由逻辑 ----------------------- */
+  const navigate = useNavigate();
+  // 跳转详情路由的回调
+  const goToDetail = (id: string) => {
+    navigate(`/detail?id=${id}`);
+  };
+
+  return { articleList, hasMore, loadMore, goToDetail };
 };
